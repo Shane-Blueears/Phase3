@@ -105,8 +105,24 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetStudentsInClass(string subject, int num, string season, int year)
     {
-      
-      return Json(null);
+            //Listing is SubjectAbbreviation
+            var query = from classes in db.Classes
+                        join course in db.Courses on classes.CId equals course.CId
+                        join departments in db.Departments on course.Listing equals departments.SubA
+                        join enrolledClass in db.Enrolled on classes.ClassId equals enrolledClass.ClassId
+                        join student in db.Students on enrolledClass.UId equals student.UId
+                        where departments.SubA == subject &&
+                        course.Number == num &&
+                        classes.Semester.Contains(season+year)
+                        select new
+                        {
+                            fname = student.FName,
+                            lname = student.LName,
+                            uid = student.UId,
+                            dob = student.Dob,
+                            grade = enrolledClass.Grade 
+                        };
+      return Json(query.ToArray());
     }
 
 
@@ -129,7 +145,16 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
     {
+            if (!category.Equals(""))
+            {
+                var query = from department in db.Departments
+                            join courses in db.Courses on department.SubA equals courses.Listing
 
+                            select new
+                            {
+
+                            };
+            }
       return Json(null);
     }
 
@@ -244,9 +269,21 @@ namespace LMS.Controllers
     /// <param name="uid">The professor's uid</param>
     /// <returns>The JSON array</returns>
     public IActionResult GetMyClasses(string uid)
-    {     
-
-      return Json(null);
+    {
+            var query = from user in db.User
+                        join professor in db.Professors on user.UId equals professor.UId
+                        join aClass in db.Classes on user.UId equals aClass.Teacher
+                        join courses in db.Courses on aClass.CId equals courses.CId
+                        where aClass.Teacher == "u" + uid
+                        select new
+                        {
+                            subject = courses.Listing,
+                            number =  courses.Number,
+                            name = courses.Name,
+                            season = aClass.Semester.Substring(0, aClass.Semester.Length-4),
+                            year = aClass.Semester.Substring(aClass.Semester.Length - 4)
+                        };
+      return Json(query.ToArray());
     }
 
 
