@@ -40,8 +40,19 @@ namespace LMS.Controllers
     /// <returns>The JSON result</returns>
     public IActionResult GetCourses(string subject)
     {
-      
-      return Json(null);
+            // Listing is subA
+            var query =(
+                from c in db.Departments
+                join course in db.Courses on c.SubA equals course.Listing
+                where course.Listing == subject
+                select new
+                {
+                    number = course.Number,
+                    name = course.Name
+                }).ToList();
+
+
+            return Json(query);
     }
 
 
