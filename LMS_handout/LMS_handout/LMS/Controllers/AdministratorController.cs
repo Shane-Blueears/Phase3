@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,8 +43,8 @@ namespace LMS.Controllers
     {
             // Listing is subA
             var query =(
-                from c in db.Departments
-                join course in db.Courses on c.SubA equals course.Listing
+                from department in db.Departments
+                join course in db.Courses on department.SubA equals course.Listing
                 where course.Listing == subject
                 select new
                 {
@@ -70,8 +71,17 @@ namespace LMS.Controllers
     /// <returns>The JSON result</returns>
     public IActionResult GetProfessors(string subject)
     {
-   
-      return Json(null);
+            var query = (
+                from department in db.Departments
+                join prof in db.Professors on department.SubA equals prof.WorksIn
+                where department.SubA == subject
+                select new
+                {
+                    lname = prof.LName,
+                    fname = prof.FName,
+                    uid = prof.UId
+                }).ToList();
+      return Json(query);
     }
 
 
@@ -87,7 +97,37 @@ namespace LMS.Controllers
     /// false if the course already exists, true otherwise.</returns>
     public IActionResult CreateCourse(string subject, int number, string name)
     {
-      
+            var hasCourse = (from course in db.Courses
+                             where course.Number == number && course.Listing == subject
+                             select course).FirstOrDefault() != null;
+                             
+
+            if (!hasCourse)
+            {
+                var createQuery = from course in db.Courses
+                                  orderby course.CId
+                                  select new
+                                  {
+                                      course.CId
+                                  };
+                Random rnd = new Random();
+                uint newCid = createQuery.First().CId + (uint)rnd.Next(100);
+                Courses newCouse = new Courses
+                {
+                    CId = newCid,
+                    Name = name,
+                    Listing = subject,
+                    Number = (uint)number
+                };
+
+                db.Courses.Add(newCouse);
+                db.SaveChanges();
+                return Json(new { success = true });
+
+            }
+            
+
+               
 
       return Json(new { success = false });
     }
@@ -112,7 +152,11 @@ namespace LMS.Controllers
     /// true otherwise.</returns>
     public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
     {
-      
+            var locAvailable = (from loc in db.Classes
+                                where loc.Loc == location && loc.STime <= 
+                                select loc).FirstOrDefault() != null;
+
+
       return Json(new { success = false });
     }
 
