@@ -116,18 +116,21 @@ namespace LMS.Controllers
             //Listing is SubjectAbbreviation
             var query = from classes in db.Classes
                         join course in db.Courses on classes.CId equals course.CId
-                        //join departments in db.Departments on course.
-
-                   where course.Number == number
+                        join departments in db.Departments on course.Listing equals departments.SubA
+                        join professor in db.Professors on classes.Teacher equals professor.UId
+                        where departments.SubA == subject &&
+                        course.Number == number
                         select new
                         {
-                            //
-                            //title.Title,
-                            //title.Author,
-                            //checkedOut.Serial,
-
+                            season = classes.Semester.Substring(0, classes.Semester.Length-4),
+                            year = classes.Semester.Substring(classes.Semester.Length-4),
+                            classes.Loc,
+                            classes.STime,
+                            classes.ETime,
+                            fname = professor.FName,
+                            lname = professor.LName
                         };
-            return Json(null);
+            return Json(query.ToArray());
         }
 
     /// <summary>
@@ -144,8 +147,22 @@ namespace LMS.Controllers
     /// <returns>The assignment contents</returns>
     public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
     {
+            var query = from classes in db.Classes
+                        join course in db.Courses on classes.CId equals course.CId
+                        join departments in db.Departments on course.Listing equals departments.SubA
+                        join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
+                        join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
+                        where departments.SubA == subject &&
+                        course.Number == num &&
+                        classes.Semester.Contains(season+year) &&
+                        assignmentCategories.Name == category &&
+                        assignment.Name ==asgname
+                        select new
+                        {
+                            assignment.Contents
+                        };
 
-      return Content("");
+            return Content(query.ToString());
     }
 
 
@@ -165,9 +182,28 @@ namespace LMS.Controllers
     /// <returns>The submission text</returns>
     public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
     {
-      
-      return Content("");
-    }
+            var query = from classes in db.Classes
+                        join course in db.Courses on classes.CId equals course.CId
+                        join departments in db.Departments on course.Listing equals departments.SubA
+                        join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
+                        join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
+                        join submission in db.Submission on assignment.AId equals submission.AId
+                        where departments.SubA == subject &&
+                        course.Number == num &&
+                        classes.Semester.Contains(season + year) &&
+                        assignmentCategories.Name == category &&
+                        assignment.Name == asgname &&
+                        submission.UId == uid
+                        select new
+                        {
+                            submission.Contents
+                        };
+            if(query.ToString().Length ==0)
+            {
+                return Content("");
+            }
+            return Content(query.ToString());
+        }
 
 
     /// <summary>
@@ -188,8 +224,54 @@ namespace LMS.Controllers
     /// </returns>
     public IActionResult GetUser(string uid)
     {
-     
-      return Json(new { success = false } );
+            var studentQuery = from user in db.User
+                        join student in db.Students on user.UId equals student.UId
+                        join departments in db.Departments on student.Major equals departments.SubA
+                        where student.UId == uid
+                        select new
+                        {
+                            fname = student.FName,
+                            lname = student.LName,
+                            uid = student.UId,
+                            department = departments.Name
+                        };
+            var professorQuery = from user in db.User
+                                 join professor in db.Professors on user.UId equals professor.UId
+                                 join departments in db.Departments on professor.WorksIn equals departments.SubA
+                                 where professor.UId == uid
+                                 select new
+                                 {
+                                     fname = professor.FName,
+                                     lname = professor.LName,
+                                     uid = professor.UId,
+                                     department = departments.Name
+                                 };
+            var administratorQuery = from user in db.User
+                                     join admin in db.Administrators on user.UId equals admin.UId
+                                     where admin.UId == uid
+                                     select new
+                                     {
+                                         fname = admin.FName,
+                                         lname = admin.LName,
+                                         uid = admin.UId,
+                                     };
+
+            if (studentQuery.ToArray().Length != 0)
+            {
+                return Json(studentQuery.ToArray());
+            }
+            else if(professorQuery.ToArray().Length != 0)
+            {
+                return Json(professorQuery.ToArray());
+            }
+            else if(administratorQuery.ToArray().Length != 0)
+            {
+                return Json(administratorQuery.ToArray());
+            }
+            else
+            {
+                return Json(new { success = false });
+            } 
     }
 
 
