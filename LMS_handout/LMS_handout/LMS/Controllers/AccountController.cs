@@ -571,7 +571,7 @@ namespace LMS.Controllers
                 User newUser = new User
                 {
                     UId = "u" + UID,
-                    Type = "Adminstrator"  //TODO: IS IT STUDENT OR STUDENTSSSS
+                    Type = "Adminstrator" 
                 };
 
                 Administrators newAdmin = new Administrators()

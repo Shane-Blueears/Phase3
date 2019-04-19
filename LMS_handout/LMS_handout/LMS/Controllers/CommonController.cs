@@ -84,15 +84,14 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetCatalog()
     {
+            //Listing is Sub Abbreviation
             var query = from department in db.Departments
-                        join course in db.Courses on department.Name equals course.Name into tempTable1
-                        from currentTable in tempTable1
                         select new
                         {
-                            dname = currentTable.Name,
+                            dname = department.Name,
                             subject = department.SubA,
-                            courses = from array in tempTable1
-                                      select new { number = array.Number, cname = array.Name }
+                            courses = from course in db.Courses where department.SubA == course.Listing
+                                      select new { number = course.Number, cname = course.Name }
                         };
             return Json(query.ToArray());
     }
@@ -124,9 +123,9 @@ namespace LMS.Controllers
                         {
                             season = classes.Semester.Substring(0, classes.Semester.Length-4),
                             year = classes.Semester.Substring(classes.Semester.Length-4),
-                            classes.Loc,
-                            classes.STime,
-                            classes.ETime,
+                            location = classes.Loc,
+                            start = classes.STime,
+                            end = classes.ETime,
                             fname = professor.FName,
                             lname = professor.LName
                         };
@@ -147,6 +146,7 @@ namespace LMS.Controllers
     /// <returns>The assignment contents</returns>
     public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
     {
+            //Listing is SubjectAbbreviation
             var query = from classes in db.Classes
                         join course in db.Courses on classes.CId equals course.CId
                         join departments in db.Departments on course.Listing equals departments.SubA
@@ -182,6 +182,7 @@ namespace LMS.Controllers
     /// <returns>The submission text</returns>
     public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
     {
+            //Listing is SubjectAbbreviation
             var query = from classes in db.Classes
                         join course in db.Courses on classes.CId equals course.CId
                         join departments in db.Departments on course.Listing equals departments.SubA
@@ -193,7 +194,7 @@ namespace LMS.Controllers
                         classes.Semester.Contains(season + year) &&
                         assignmentCategories.Name == category &&
                         assignment.Name == asgname &&
-                        submission.UId == uid
+                        submission.UId == "u"+uid
                         select new
                         {
                             submission.Contents
@@ -227,7 +228,7 @@ namespace LMS.Controllers
             var studentQuery = from user in db.User
                         join student in db.Students on user.UId equals student.UId
                         join departments in db.Departments on student.Major equals departments.SubA
-                        where student.UId == uid
+                        where student.UId == "u"+uid
                         select new
                         {
                             fname = student.FName,
@@ -238,7 +239,7 @@ namespace LMS.Controllers
             var professorQuery = from user in db.User
                                  join professor in db.Professors on user.UId equals professor.UId
                                  join departments in db.Departments on professor.WorksIn equals departments.SubA
-                                 where professor.UId == uid
+                                 where professor.UId == "u" + uid
                                  select new
                                  {
                                      fname = professor.FName,
@@ -248,7 +249,7 @@ namespace LMS.Controllers
                                  };
             var administratorQuery = from user in db.User
                                      join admin in db.Administrators on user.UId equals admin.UId
-                                     where admin.UId == uid
+                                     where admin.UId == "u" + uid
                                      select new
                                      {
                                          fname = admin.FName,
