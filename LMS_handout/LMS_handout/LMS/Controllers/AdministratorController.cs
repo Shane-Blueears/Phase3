@@ -164,18 +164,44 @@ namespace LMS.Controllers
                 {
                     locAvailable = true;
                 }
+                else
+                {
+                    locAvailable = false;
+                }
             }
 
             string semester = season + year;
-            var hasExisted = (from classes in db.Classes
+            var hasExisted = (from classes in db.Classes 
+                              join courses in db.Courses on classes.CId equals courses.CId
                               where semester == classes.Semester
                               select classes
                               ).FirstOrDefault() != null;
 
             if (locAvailable && !hasExisted)
             {
+                var query = (from classes in db.Classes
+                             join courses in db.Courses on classes.CId equals courses.CId
+                             orderby classes.ClassId
+                             select new
+                             {
+                                 classes.CId,
+                                 classes.ClassId
+                             }
+                             );
+                Classes newClass = new Classes
+                {
+                    ClassId = query.First().ClassId + 1,
+                    CId = query.First().CId + 1,
+                    Semester = season + year,
+                    Teacher = instructor,
+                    Loc = location,
+                    STime = start,
+                    ETime = end
+                };
+                db.Classes.Add(newClass);
+                db.SaveChanges();
+                return Json(new { success = true });
 
-                
             }
 
       return Json(new { success = false });
