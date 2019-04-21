@@ -156,18 +156,24 @@ namespace LMS.Controllers
             var locQuery = (from loc in db.Classes
                             where loc.Loc == location
                             select loc);
-
-            foreach(var loc in locQuery)
+            //TODO: check if this works
+            if (locQuery.Count() != 0)
             {
-                if ((start.CompareTo(loc.STime) < 0) && (end.CompareTo(loc.STime) < 0) ||
-                                (start.CompareTo(loc.ETime) > 0 && end.CompareTo(loc.ETime) > 0))
+                foreach (var loc in locQuery)
                 {
-                    locAvailable = true;
+                    if ((start.CompareTo(loc.STime) < 0) && (end.CompareTo(loc.STime) < 0) ||
+                                    (start.CompareTo(loc.ETime) > 0 && end.CompareTo(loc.ETime) > 0))
+                    {
+                        locAvailable = true;
+                    }
+                    else
+                    {
+                        locAvailable = false;
+                    }
                 }
-                else
-                {
-                    locAvailable = false;
-                }
+            }else
+            {
+                locAvailable = true;
             }
 
             string semester = season + year;
@@ -190,8 +196,8 @@ namespace LMS.Controllers
                              );
                 Classes newClass = new Classes
                 {
-                    ClassId = query.First().ClassId + 1,
-                    CId = query.First().CId + 1,
+                    //ClassId = query.First().ClassId + 1,
+                    CId = query.First().CId,
                     Semester = season + year,
                     Teacher = instructor,
                     Loc = location,
