@@ -226,8 +226,18 @@ namespace LMS.Controllers
     /// <param name="catweight">The new category weight</param>
     /// <returns>A JSON object containing {success = true/false} </returns>
     public IActionResult CreateAssignmentCategory(string subject, int num, string season, int year, string category, int catweight)
-    {    
-            var query = 
+    {
+            var query = from courses in db.Courses
+                        join classes in db.Classes on courses.CId equals classes.CId
+                        join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
+                        where courses.Listing == subject &&
+                        courses.Number == num &&
+                        classes.Semester.Contains(season + year)
+                        select new
+                        {
+
+                        };
+            
       return Json(new { success = false });
     }
 
