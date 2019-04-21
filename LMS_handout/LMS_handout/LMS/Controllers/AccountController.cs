@@ -491,7 +491,6 @@ namespace LMS.Controllers
                         {
                             user.UId
                         };
-            //query = query.Take(1); //take the first row of the query
             int currentNumberOfUsers = query.Count() + 1;
 
 

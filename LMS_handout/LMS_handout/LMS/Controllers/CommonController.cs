@@ -259,15 +259,15 @@ namespace LMS.Controllers
 
             if (studentQuery.ToArray().Length != 0)
             {
-                return Json(studentQuery.ToArray());
+                return Json(studentQuery.Single());
             }
             else if(professorQuery.ToArray().Length != 0)
             {
-                return Json(professorQuery.ToArray());
+                return Json(professorQuery.Single());
             }
             else if(administratorQuery.ToArray().Length != 0)
             {
-                return Json(administratorQuery.ToArray());
+                return Json(administratorQuery.Single());
             }
             else
             {
