@@ -117,8 +117,7 @@ namespace LMS.Controllers
                         join course in db.Courses on classes.CId equals course.CId
                         join departments in db.Departments on course.Listing equals departments.SubA
                         join professor in db.Professors on classes.Teacher equals professor.UId
-                        where departments.SubA == subject &&
-                        course.Number == number
+                        where departments.SubA == subject && course.Number == number
                         select new
                         {
                             season = classes.Semester.Substring(0, classes.Semester.Length-4),

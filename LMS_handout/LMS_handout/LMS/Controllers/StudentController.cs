@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -145,8 +146,66 @@ namespace LMS.Controllers
     public IActionResult SubmitAssignmentText(string subject, int num, string season, int year, 
       string category, string asgname, string uid, string contents)
     {
-     
-      return Json(new { success = false });
+            string semester = season + year;
+            var assignQuery = (from students in db.Students
+                               join enrolled in db.Enrolled on students.UId equals enrolled.UId
+                               join classes in db.Classes on enrolled.ClassId equals classes.ClassId
+                               join courses in db.Courses on classes.CId equals courses.CId
+                               join assignCats in db.AssignmentCategories on classes.ClassId equals assignCats.ClassId
+                               join assignments in db.Assignments on assignCats.AcId equals assignments.AcId
+                               where subject == courses.Listing && num == courses.Number && semester == classes.Semester
+                               && category == assignCats.Name && asgname == assignments.Name && uid == students.UId
+                               select new
+                               {
+                                   AId = assignments.AId,
+                                   AcId = assignments.AcId,
+                                   Name = assignments.Name,
+                                   Content = assignments.Contents,
+                               }
+                );
+
+            if (assignQuery.Count() == 0)
+                return Json(new { success = false });
+
+            var subCountQuery = (from submission in db.Submission
+                                 orderby submission.SId
+                                 select new { submission.SId }
+                                 );
+
+            var subQuery = (from submission in db.Submission
+                            where submission.UId == uid
+                            select new
+                            {
+                                Contents = submission.Contents
+                            }).ToList();
+
+            if (subQuery.Count == 0)
+            {
+                Submission newSubmission = new Submission
+                {
+                    SId = subCountQuery.First().SId + 1,
+                    AId = assignQuery.First().AId,
+                    UId = uid,
+                    Contents = contents,
+                    Score = 0,
+                    Time = DateTime.Now
+                };
+                db.Submission.Add(newSubmission);
+                db.SaveChanges();
+                return Json(new { success = true });
+            }
+            else
+            {
+                Submission prev = (from submission in db.Submission
+                                   where submission.UId == uid
+                                   select submission).First();
+                prev.Contents = contents;
+                db.SaveChanges();
+                return Json(new { success = true });
+            }
+            
+            
+            
     }
 
     
@@ -161,9 +220,45 @@ namespace LMS.Controllers
     /// <returns>A JSON object containing {success = {true/false}. 
     /// false if the student is already enrolled in the class, true otherwise.</returns>
     public IActionResult Enroll(string subject, int num, string season, int year, string uid)
-    {      
+    {
+            string semester = season + year;
+            var stuEnrolled = (from students in db.Students
+                               join enrolled in db.Enrolled on students.UId equals enrolled.UId
+                               join classes in db.Classes on enrolled.ClassId equals classes.ClassId
+                               join courses in db.Courses on classes.CId equals courses.CId
+                               where uid == students.UId && subject == courses.Listing && num == courses.Number && semester == classes.Semester
+                               select new
+                               {
+                                   students.UId
+                               }
+                         );
 
-      return Json(new { success = false });
+            if (stuEnrolled.Count() == 0)
+            {
+                // Make sure the class exists
+                var classQuery = (from classes in db.Classes
+                                  join courses in db.Courses on classes.CId equals courses.CId
+                                  where subject == courses.Listing && num == courses.Number && semester == classes.Semester
+                                  select new
+                                  {
+                                      classes.ClassId
+                                  }
+                                  );
+                if (classQuery.Count() != 0)
+                {
+                    Enrolled newEnroll = new Enrolled
+                    {
+                        UId = uid,
+                        ClassId = classQuery.First().ClassId,
+                        Grade = ""
+                    };
+                    db.Enrolled.Add(newEnroll);
+                    db.SaveChanges();
+                    return Json(new { success = true });
+                }
+            }
+
+        return Json(new { success = false });
     }
 
 
