@@ -152,8 +152,63 @@ namespace LMS.Controllers
     /// true otherwise.</returns>
     public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
     {
+            bool locAvailable = false;
+            var locQuery = (from loc in db.Classes
+                            where loc.Loc == location
+                            select loc);
+            //TODO: check if this works
+            if (locQuery.Count() != 0)
+            {
+                foreach (var loc in locQuery)
+                {
+                    if ((start.CompareTo(loc.STime) < 0) && (end.CompareTo(loc.STime) < 0) ||
+                                    (start.CompareTo(loc.ETime) > 0 && end.CompareTo(loc.ETime) > 0))
+                    {
+                        locAvailable = true;
+                    }
+                    else
+                    {
+                        locAvailable = false;
+                    }
+                }
+            }else
+            {
+                locAvailable = true;
+            }
 
+            string semester = season + year;
+            var hasExisted = (from classes in db.Classes 
+                              join courses in db.Courses on classes.CId equals courses.CId
+                              where semester == classes.Semester
+                              select classes
+                              ).FirstOrDefault() != null;
 
+            if (locAvailable && !hasExisted)
+            {
+                var query = (from classes in db.Classes
+                             join courses in db.Courses on classes.CId equals courses.CId
+                             orderby classes.ClassId
+                             select new
+                             {
+                                 classes.CId,
+                                 classes.ClassId
+                             }
+                             );
+                Classes newClass = new Classes
+                {
+                    //ClassId = query.First().ClassId + 1,
+                    CId = query.First().CId,
+                    Semester = season + year,
+                    Teacher = instructor,
+                    Loc = location,
+                    STime = start,
+                    ETime = end
+                };
+                db.Classes.Add(newClass);
+                db.SaveChanges();
+                return Json(new { success = true });
+
+            }
 
       return Json(new { success = false });
     }
