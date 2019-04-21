@@ -108,18 +108,17 @@ namespace LMS.Controllers
             //Listing is SubjectAbbreviation
             var query = from classes in db.Classes
                         join course in db.Courses on classes.CId equals course.CId
-                        join departments in db.Departments on course.Listing equals departments.SubA
                         join enrolledClass in db.Enrolled on classes.ClassId equals enrolledClass.ClassId
                         join student in db.Students on enrolledClass.UId equals student.UId
-                        where departments.SubA == subject &&
+                        where course.Listing == subject &&
                         course.Number == num &&
-                        classes.Semester.Contains(season+year)
+                        classes.Semester.Equals(season+year)
                         select new
                         {
                             fname = student.FName,
                             lname = student.LName,
                             uid = student.UId,
-                            dob = student.Dob,
+                            dob = new DateTime((long)student.Dob),
                             grade = enrolledClass.Grade 
                         };
       return Json(query.ToArray());
@@ -145,18 +144,46 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
     {
-            if (!category.Equals(""))
+            //Listing is Subject Abbreviation
+            if (category!=null)
             {
-                var query = from department in db.Departments
-                            join courses in db.Courses on department.SubA equals courses.Listing
-
+                var query = from courses in db.Courses 
+                            join classes in db.Classes on courses.CId equals classes.CId
+                            join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
+                            join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
+                            join submission in db.Submission on assignment.AId equals submission.AId
+                            where courses.Listing == subject &&
+                            courses.Number == num &&
+                            classes.Semester.Equals(season + year) &&
+                            assignmentCat.Name.Equals(category) &&
+                            assignment.AId == submission.AId
                             select new
                             {
-
+                                aname = assignment.Name,
+                                cname = assignmentCat.Name,
+                                due = assignment.Due,
+                                submissions = (from count in db.Submission group count by count.AId).Distinct().Count()
                             };
+                return Json(query.ToArray());
             }
-      return Json(null);
-    }
+            var anotherQuery = from courses in db.Courses
+                        join classes in db.Classes on courses.CId equals classes.CId
+                        join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
+                        join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
+                        join submission in db.Submission on assignment.AId equals submission.AId
+                        where courses.Listing == subject &&
+                        courses.Number == num &&
+                        classes.Semester.Equals(season + year) &&
+                        assignment.AId == submission.AId
+                        select new
+                        {
+                            aname = assignment.Name,
+                            cname = assignmentCat.Name,
+                            due = assignment.Due,
+                            submissions = (from count in db.Submission group count by count.AId).Distinct().Count()
+                        };
+            return Json(anotherQuery.ToArray());
+        }
 
 
     /// <summary>
@@ -172,9 +199,19 @@ namespace LMS.Controllers
     /// <param name="category">The name of the assignment category in the class</param>
     /// <returns>The JSON array</returns>
     public IActionResult GetAssignmentCategories(string subject, int num, string season, int year)
-    {      
-
-      return Json(null);
+    {
+            var query = from courses in db.Courses
+                        join classes in db.Classes on courses.CId equals classes.CId
+                        join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
+                        where courses.Listing == subject &&
+                        courses.Number == num &&
+                        classes.Semester.Contains(season + year)
+                        select new
+                        {
+                            name = assignmentCat.Name,
+                            weight = assignmentCat.GradeWeight
+                        };
+      return Json(query.ToArray());
     }
 
     /// <summary>
@@ -190,7 +227,7 @@ namespace LMS.Controllers
     /// <returns>A JSON object containing {success = true/false} </returns>
     public IActionResult CreateAssignmentCategory(string subject, int num, string season, int year, string category, int catweight)
     {    
-
+            var query = 
       return Json(new { success = false });
     }
 

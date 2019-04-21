@@ -152,9 +152,7 @@ namespace LMS.Controllers
     /// true otherwise.</returns>
     public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
     {
-            var locAvailable = (from loc in db.Classes
-                                where loc.Loc == location && loc.STime <= 
-                                select loc).FirstOrDefault() != null;
+
 
 
       return Json(new { success = false });
