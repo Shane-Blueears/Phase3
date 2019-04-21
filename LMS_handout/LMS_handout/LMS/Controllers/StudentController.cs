@@ -67,8 +67,25 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetMyClasses(string uid)
     {
-   
-      return Json(null);
+            uid = "u" + uid;
+            var classQuery = (from student in db.Students
+                              join enrolled in db.Enrolled on student.UId equals enrolled.UId
+                              join classes in db.Classes on enrolled.ClassId equals classes.ClassId
+                              join courses in db.Courses on classes.CId equals courses.CId
+                              where uid == student.UId
+                              select new
+                              {
+                                  // course listing is subA
+                                  subject = courses.Listing,
+                                  number = courses.Number,
+                                  name = courses.Name,
+                                  season = classes.Semester.Substring(0, classes.Semester.Length - 4),
+                                  year = classes.Semester.Substring(classes.Semester.Length - 4),
+                                  grade = enrolled.Grade
+                              }
+
+                      ).ToList();
+            return Json(classQuery);
     }
 
     /// <summary>
@@ -86,9 +103,24 @@ namespace LMS.Controllers
     /// <param name="uid"></param>
     /// <returns>The JSON array</returns>
     public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
-    {     
-
-      return Json(null);
+    {
+            string semester = season + year;
+            var assignQuery = (from students in db.Students
+                               join enrolled in db.Enrolled on students.UId equals enrolled.UId
+                               join classes in db.Classes on enrolled.ClassId equals classes.ClassId
+                               join courses in db.Courses on classes.CId equals courses.CId
+                               join assignCats in db.AssignmentCategories on classes.ClassId equals assignCats.ClassId
+                               join assignments in db.Assignments on assignCats.AcId equals assignments.AcId
+                               where subject == courses.Listing && num == courses.Number && semester == classes.Semester && uid == students.UId
+                               select new
+                               {
+                                   aname = assignments.Name,
+                                   cname = assignCats.Name,
+                                   due = assignments.Due,
+                                   score = assignments.Points
+                               }
+                ).ToList();
+        return Json(assignQuery);
     }
 
 
