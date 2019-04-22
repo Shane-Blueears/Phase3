@@ -292,17 +292,21 @@ namespace LMS.Controllers
                                assignCat.Name == category
                                select new
                                {
-                                   assignCat.AcId
+                                   assignCat.AcId,
+                                   classes.ClassId
                                };
-            uint aClassID = createAssign.First().AcId;
-            Assignments newAssignment = new Assignments
-            {
-                AcId = aClassID,
-                Name = asgname,
-                Contents = asgcontents,
-                Due = asgdue,
-                Points = (uint)asgpoints
-            };
+            uint assignmentCatID = createAssign.First().AcId;
+            uint classesID = createAssign.First().ClassId;
+            //Assignments newAssignment = new Assignments
+            //{
+            //    AcId = assignmentCatID,
+            //    Name = asgname,
+            //    Contents = asgcontents,
+            //    Due = asgdue,
+            //    Points = (uint)asgpoints
+            //};
+            //db.Assignments.Add(newAssignment);
+            //db.SaveChanges();
             //Change all student scores
             var query = (from submissions in db.Submission
                         join students in db.Students on submissions.UId equals students.UId
@@ -344,9 +348,6 @@ namespace LMS.Controllers
                                   {
                                       points = assign.Points
                                   },
-                     grade = from enrolled in db.Enrolled where students.UId == enrolled.UId && 
-                             classes.ClassId == enrolled.ClassId
-                             select enrolled.Grade
                         }).ToList();
             uint totalPoints = 0;
             foreach (var student in query)
@@ -359,7 +360,8 @@ namespace LMS.Controllers
                     {
                         foreach (var point in student.totalScore)
                         {
-                            totalPoints += point.points;
+                            if(point.points!=0)
+                                 totalPoints += point.points;
                         }
                     }
                     
@@ -368,12 +370,69 @@ namespace LMS.Controllers
                 {
                     foreach (var score in student.studentScore)
                     {
-                        currentScore += score.score;
+                        if(score.score!=0)
+                            currentScore += score.score;
                     }
                 }
                 double percentGrade = currentScore / totalPoints * 100;
-                //HOW TO REWRITE ROW!!!!!!!!!!!!!!1
-                //student.studentScore = currentScore;
+                var changeGrade = from enrol in db.Enrolled
+                                  where enrol.ClassId == classesID &&
+                                  currentUID == enrol.UId
+                                  select enrol;
+                Enrolled grade = changeGrade.SingleOrDefault();
+                if(grade != null)
+                {
+                    if(percentGrade >= 93)
+                    {
+                        grade.Grade = "A";
+                    }
+                    else if (90 <= percentGrade && percentGrade < 93)
+                    {
+                        grade.Grade = "A-";
+                    }
+                    else if (87 <= percentGrade && percentGrade < 90)
+                    {
+                        grade.Grade = "B+";
+                    }
+                    else if (83 <= percentGrade && percentGrade < 87)
+                    {
+                        grade.Grade = "B";
+                    }
+                    else if (80 <= percentGrade && percentGrade < 83)
+                    {
+                        grade.Grade = "B-";
+                    }
+                    else if (77 <= percentGrade && percentGrade < 80)
+                    {
+                        grade.Grade = "C+";
+                    }
+                    else if (73 <= percentGrade && percentGrade < 77)
+                    {
+                        grade.Grade = "C";
+                    }
+                    else if (70 <= percentGrade && percentGrade < 73)
+                    {
+                        grade.Grade = "C-";
+                    }
+                    else if (67 <= percentGrade && percentGrade < 70)
+                    {
+                        grade.Grade = "D+";
+                    }
+                    else if (63 <= percentGrade && percentGrade < 67)
+                    {
+                        grade.Grade = "D";
+                    }
+                    else if (60 <= percentGrade && percentGrade < 63)
+                    {
+                        grade.Grade = "D-";
+                    }
+                    else
+                    {
+                        grade.Grade = "E";
+                    }
+
+                }
+                db.SaveChanges();
 
             }
       return Json(new { success = false });
