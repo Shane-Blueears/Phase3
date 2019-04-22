@@ -251,7 +251,7 @@ namespace LMS.Controllers
                 {
                     Enrolled newEnroll = new Enrolled
                     {
-                        UId = "u"+uid,
+                        UId = uid,
                         ClassId = classQuery.First().ClassId,
                         Grade = ""
                     };
