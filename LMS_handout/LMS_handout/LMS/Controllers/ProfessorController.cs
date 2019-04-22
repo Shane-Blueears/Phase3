@@ -152,12 +152,11 @@ namespace LMS.Controllers
                             join classes in db.Classes on courses.CId equals classes.CId
                             join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
                             join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
-                            join submission in db.Submission on assignment.AId equals submission.AId
                             where courses.Listing == subject &&
                             courses.Number == num &&
                             classes.Semester.Equals(season + year) &&
                             assignmentCat.Name.Equals(category) &&
-                            assignment.AId == submission.AId
+                            assignment.AcId == assignmentCat.AcId
                             select new
                             {
                                 aname = assignment.Name,
@@ -171,16 +170,15 @@ namespace LMS.Controllers
                         join classes in db.Classes on courses.CId equals classes.CId
                         join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
                         join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
-                        join submission in db.Submission on assignment.AId equals submission.AId
                         where courses.Listing == subject &&
                         courses.Number == num &&
-                        classes.Semester.Equals(season + year) &&
-                        assignment.AId == submission.AId
+                        classes.Semester.Equals(season + year) 
                         select new
                         {
                             aname = assignment.Name,
                             cname = assignmentCat.Name,
                             due = assignment.Due,
+                            //submissions = (from submit in db.Submission where submit.AId==assignment.AId select submit).Distinct().Count()
                             submissions = (from count in db.Submission group count by count.AId).Distinct().Count()
                         };
             return Json(anotherQuery.ToArray());
@@ -336,82 +334,91 @@ namespace LMS.Controllers
             foreach (var student in query)
             {
                 string currentUID = student.currentStudent;
+                uint totalSubScore = 0;
+                uint totalPoints = 0;
+                double totalPercentage = 0;
+                uint totalGradeWeight = 0;
                 foreach(AssignmentCategories e in student.assignmentCategoryList)
                 {
-
+                    totalGradeWeight += e.GradeWeight;
                     var assignments = from assign in db.Assignments
-                                      where e.AcId == assign.AcId
+                                      join submission in db.Submission on assign.AId equals submission.AId
+                                      where e.AcId == assign.AcId &&
+                                      submission.UId == currentUID
                                       select new
                                       {
-                                          assign.Submission,
+                                          submission.Score,
                                           assign.Points
-                                      }.ToString();
+                                      };
                     foreach(var assignment in assignments)
                     {
-                        //assignment.
+                        totalSubScore += assignment.Score;
+                        totalPoints += assignment.Points;
                     }
+                    totalPercentage += (totalSubScore / totalPoints)*e.GradeWeight;
 
                 }
-                
+                double scale = 100 / totalGradeWeight;
+                double percentGrade = totalPercentage * scale;
                 var changeGrade = from enrol in db.Enrolled
                                   where enrol.ClassId == classesID &&
                                   currentUID == enrol.UId
                                   select enrol;
                 Enrolled grade = changeGrade.SingleOrDefault();
-                //if(grade != null)
-                //{
-                //    if(percentGrade >= 93)
-                //    {
-                //        grade.Grade = "A";
-                //    }
-                //    else if (90 <= percentGrade && percentGrade < 93)
-                //    {
-                //        grade.Grade = "A-";
-                //    }
-                //    else if (87 <= percentGrade && percentGrade < 90)
-                //    {
-                //        grade.Grade = "B+";
-                //    }
-                //    else if (83 <= percentGrade && percentGrade < 87)
-                //    {
-                //        grade.Grade = "B";
-                //    }
-                //    else if (80 <= percentGrade && percentGrade < 83)
-                //    {
-                //        grade.Grade = "B-";
-                //    }
-                //    else if (77 <= percentGrade && percentGrade < 80)
-                //    {
-                //        grade.Grade = "C+";
-                //    }
-                //    else if (73 <= percentGrade && percentGrade < 77)
-                //    {
-                //        grade.Grade = "C";
-                //    }
-                //    else if (70 <= percentGrade && percentGrade < 73)
-                //    {
-                //        grade.Grade = "C-";
-                //    }
-                //    else if (67 <= percentGrade && percentGrade < 70)
-                //    {
-                //        grade.Grade = "D+";
-                //    }
-                //    else if (63 <= percentGrade && percentGrade < 67)
-                //    {
-                //        grade.Grade = "D";
-                //    }
-                //    else if (60 <= percentGrade && percentGrade < 63)
-                //    {
-                //        grade.Grade = "D-";
-                //    }
-                //    else
-                //    {
-                //        grade.Grade = "E";
-                //    }
+                if (grade != null)
+                {
+                    if (percentGrade >= 93)
+                    {
+                        grade.Grade = "A";
+                    }
+                    else if (90 <= percentGrade && percentGrade < 93)
+                    {
+                        grade.Grade = "A-";
+                    }
+                    else if (87 <= percentGrade && percentGrade < 90)
+                    {
+                        grade.Grade = "B+";
+                    }
+                    else if (83 <= percentGrade && percentGrade < 87)
+                    {
+                        grade.Grade = "B";
+                    }
+                    else if (80 <= percentGrade && percentGrade < 83)
+                    {
+                        grade.Grade = "B-";
+                    }
+                    else if (77 <= percentGrade && percentGrade < 80)
+                    {
+                        grade.Grade = "C+";
+                    }
+                    else if (73 <= percentGrade && percentGrade < 77)
+                    {
+                        grade.Grade = "C";
+                    }
+                    else if (70 <= percentGrade && percentGrade < 73)
+                    {
+                        grade.Grade = "C-";
+                    }
+                    else if (67 <= percentGrade && percentGrade < 70)
+                    {
+                        grade.Grade = "D+";
+                    }
+                    else if (63 <= percentGrade && percentGrade < 67)
+                    {
+                        grade.Grade = "D";
+                    }
+                    else if (60 <= percentGrade && percentGrade < 63)
+                    {
+                        grade.Grade = "D-";
+                    }
+                    else
+                    {
+                        grade.Grade = "E";
+                    }
 
-                //}
-                //db.SaveChanges();
-
+                }
+                db.SaveChanges();
+                return Json(new { success = true });
             }
       return Json(new { success = false });
     }
@@ -486,11 +493,8 @@ namespace LMS.Controllers
                                classes.Semester.Equals(season + year) &&
                                assign.Name == asgname &&
                                students.UId == "u" + uid
-                        select new
-                        {
-
-                        };
-            //update current students grade
+                        select submissions;
+            //update the grade of that assignment then change total grade
       return Json(new { success = true });
     }
 
