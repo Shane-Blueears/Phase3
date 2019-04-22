@@ -106,6 +106,7 @@ namespace LMS.Controllers
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
         {
             string semester = season + year;
+            uid = "u" + uid;
             var assignQuery = (from students in db.Students
                                join enrolled in db.Enrolled on students.UId equals enrolled.UId
                                join classes in db.Classes on enrolled.ClassId equals classes.ClassId
@@ -147,6 +148,7 @@ namespace LMS.Controllers
           string category, string asgname, string uid, string contents)
         {
             string semester = season + year;
+            uid = "u" + uid;
             var assignQuery = (from students in db.Students
                                join enrolled in db.Enrolled on students.UId equals enrolled.UId
                                join classes in db.Classes on enrolled.ClassId equals classes.ClassId
@@ -222,6 +224,7 @@ namespace LMS.Controllers
         public IActionResult Enroll(string subject, int num, string season, int year, string uid)
         {
             string semester = season + year;
+            uid = "u" + uid;
             var stuEnrolled = (from students in db.Students
                                join enrolled in db.Enrolled on students.UId equals enrolled.UId
                                join classes in db.Classes on enrolled.ClassId equals classes.ClassId
