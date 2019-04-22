@@ -185,7 +185,7 @@ namespace LMS.Controllers
             {
                 Submission newSubmission = new Submission
                 {
-                    SId = subCountQuery.First().SId + 1,
+                   //SId = subCountQuery.First().SId + 1,
                     AId = assignQuery.First().AId,
                     UId = uid,
                     Contents = contents,
