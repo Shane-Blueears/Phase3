@@ -276,11 +276,64 @@ namespace LMS.Controllers
     /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
     public IActionResult GetGPA(string uid)
     {     
+      double sum = 0;
+      uid = uid.Substring(1);
+      var gradeQuery = (from students in db.Students
+                        join enrolled in db.Enrolled on students.UId equals enrolled.UId
+                        where uid == students.UId
+                        select enrolled.Grade);
+            int entries = gradeQuery.Count();
+      foreach(var grade in gradeQuery)
+            {
+                switch(grade)
+                {
+                    case "A":
+                        sum += 4.0;
+                        break;
+                    case "A-":
+                        sum += 3.7;
+                        break;
+                    case "B+":
+                        sum += 3.3;
+                        break;
+                    case "B":
+                        sum += 3.0;
+                        break;
+                    case "B-":
+                        sum += 2.7;
+                        break;
+                    case "C+":
+                        sum += 2.3;
+                        break;
+                    case "C":
+                        sum += 2.0;
+                        break;
+                    case "C-":
+                        sum += 1.7;
+                        break;
+                    case "D+":
+                        sum += 1.3;
+                        break;
+                    case "D":
+                        sum += 1.0;
+                        break;
+                    case "D-":
+                        sum += 0.7;
+                        break;
+                    case "E":
+                        sum += 0.0;
+                        break;
+                    default:
+                        entries--;
+                        break;
+                }
+            }
 
-      return Json(null);
+
+      return Json(new { GPA = (sum / entries)});
     }
 
     /*******End code to modify********/
-
+    
   }
 }
