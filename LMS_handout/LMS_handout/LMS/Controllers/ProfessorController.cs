@@ -148,7 +148,7 @@ namespace LMS.Controllers
             //Listing is Subject Abbreviation
             if (category!=null)
             {
-                var query = from courses in db.Courses 
+                var query = from courses in db.Courses
                             join classes in db.Classes on courses.CId equals classes.CId
                             join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
                             join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
@@ -162,8 +162,20 @@ namespace LMS.Controllers
                                 aname = assignment.Name,
                                 cname = assignmentCat.Name,
                                 due = assignment.Due,
-                                submissions = (from count in db.Submission group count by count.AId).Distinct().Count()
+                                submissions = (from submit in db.Submission
+                                              join assignment in db.Assignments on submit.AId equals assignment.AId
+                                              join assignmentCat in db.AssignmentCategories on assignment.AcId equals assignmentCat.AcId
+                                              join classes in db.Classes on assignmentCat.ClassId equals classes.ClassId
+                                              join courses in db.Courses on classes.CId equals courses.CId
+                                              where courses.Listing == subject &&
+                                              courses.Number == num &&
+                                              classes.Semester.Equals(season + year) &&
+                                              assignmentCat.Name.Equals(category) &&
+                                              assignment.AcId == assignmentCat.AcId
+                                               select submit).Count()
                             };
+                
+                //seperate the submissions
                 return Json(query.ToArray());
             }
             var anotherQuery = from courses in db.Courses
@@ -172,15 +184,23 @@ namespace LMS.Controllers
                         join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
                         where courses.Listing == subject &&
                         courses.Number == num &&
-                        classes.Semester.Equals(season + year) 
-                        select new
-                        {
-                            aname = assignment.Name,
-                            cname = assignmentCat.Name,
-                            due = assignment.Due,
-                            //submissions = (from submit in db.Submission where submit.AId==assignment.AId select submit).Distinct().Count()
-                            submissions = (from count in db.Submission group count by count.AId).Distinct().Count()
-                        };
+                        classes.Semester.Equals(season + year) &&
+                        assignment.AcId == assignmentCat.AcId
+                               select new
+                               {
+                                   aname = assignment.Name,
+                                   cname = assignmentCat.Name,
+                                   due = assignment.Due,
+                                   submissions = (from submit in db.Submission
+                                                  join assignment in db.Assignments on submit.AId equals assignment.AId
+                                                  join assignmentCat in db.AssignmentCategories on assignment.AcId equals assignmentCat.AcId
+                                                  join classes in db.Classes on assignmentCat.ClassId equals classes.ClassId
+                                                  join courses in db.Courses on classes.CId equals courses.CId
+                                                  where courses.Listing == subject &&
+                                                  courses.Number == num &&
+                                                  classes.Semester.Equals(season + year) 
+                                                  select submit).Count()
+                               };
             return Json(anotherQuery.ToArray());
         }
 
@@ -305,66 +325,24 @@ namespace LMS.Controllers
             //};
             //db.Assignments.Add(newAssignment);
             //db.SaveChanges();
-            //Change all student scores
-            var query = (from submissions in db.Submission
-                         join students in db.Students on submissions.UId equals students.UId
-                         join assign in db.Assignments on submissions.AId equals assign.AId
-                         join assignCat in db.AssignmentCategories on assign.AcId equals assignCat.AcId
-                         join classes in db.Classes on assignCat.ClassId equals classes.ClassId
-                         join course in db.Courses on classes.CId equals course.CId
-                         where course.Listing == subject &&
-                                course.Number == num &&
-                                classes.Semester.Equals(season + year)
-                         select new
-                         {
-                             currentStudent = students.UId,
-                             assignmentCategoryList = from submissions in db.Submission
-                                                      join targetStudents in db.Students on submissions.UId equals students.UId
-                                                      join assign in db.Assignments on submissions.AId equals assign.AId
-                                                      join assignCat in db.AssignmentCategories on assign.AcId equals assignCat.AcId
-                                                      join classes in db.Classes on assignCat.ClassId equals classes.ClassId
-                                                      join course in db.Courses on classes.CId equals course.CId
-                                                      where course.Listing == subject &&
-                                                             course.Number == num &&
-                                                             targetStudents.UId == students.UId &&
-                                                             classes.Semester.Equals(season + year)
-                                                      select assignCat
-                        }).ToList();
-            //For each student in the class
-            foreach (var student in query)
-            {
-                string currentUID = student.currentStudent;
-                uint totalSubScore = 0;
-                uint totalPoints = 0;
-                double totalPercentage = 0;
-                uint totalGradeWeight = 0;
-                foreach(AssignmentCategories e in student.assignmentCategoryList)
-                {
-                    totalGradeWeight += e.GradeWeight;
-                    var assignments = from assign in db.Assignments
-                                      join submission in db.Submission on assign.AId equals submission.AId
-                                      where e.AcId == assign.AcId &&
-                                      submission.UId == currentUID
-                                      select new
-                                      {
-                                          submission.Score,
-                                          assign.Points
-                                      };
-                    foreach(var assignment in assignments)
-                    {
-                        totalSubScore += assignment.Score;
-                        totalPoints += assignment.Points;
-                    }
-                    totalPercentage += (totalSubScore / totalPoints)*e.GradeWeight;
 
-                }
-                double scale = 100 / totalGradeWeight;
-                double percentGrade = totalPercentage * scale;
-                var changeGrade = from enrol in db.Enrolled
-                                  where enrol.ClassId == classesID &&
-                                  currentUID == enrol.UId
-                                  select enrol;
-                Enrolled grade = changeGrade.SingleOrDefault();
+            //Change all student scores
+            //Get all Students in that class
+            var getAllStudents = (from student in db.Students
+                                 join courses in db.Courses on student.Major equals courses.Listing
+                                 join classes in db.Classes on courses.CId equals classes.CId
+                                 where classes.ClassId == classesID
+                                 select student).ToList();
+            //For each student and knowing which class they are in
+            foreach (Students s in getAllStudents)
+            {
+                //Get their assignmentCategories and compute
+                double percentGrade = getStudentScore(s.UId, classesID);
+                var changeGrade = from enroll in db.Enrolled
+                                  where enroll.ClassId == classesID &&
+                                  s.UId == enroll.UId
+                                  select enroll;
+                Enrolled grade = changeGrade.SingleOrDefault(); //ITS NOT UPDATING, making a new row instead
                 if (grade != null)
                 {
                     if (percentGrade >= 93)
@@ -415,11 +393,11 @@ namespace LMS.Controllers
                     {
                         grade.Grade = "E";
                     }
-
+                    db.SaveChanges();
+                    return Json(new { success = true });
                 }
-                db.SaveChanges();
-                return Json(new { success = true });
             }
+                
       return Json(new { success = false });
     }
 
@@ -527,6 +505,45 @@ namespace LMS.Controllers
                         };
       return Json(query.ToArray());
     }
+        /// <summary>
+        /// Helper method that takes in a UID and classID to find the proper grade of 1 student
+        /// </summary>
+        /// <param name="uID"></param>
+        /// <param name="classID"></param>
+        /// <returns></returns>
+        private double getStudentScore(string uID, uint classID )
+        {
+            var getAllAssignCat = (from submit in db.Submission
+                                                    join assign in db.Assignments on submit.AId equals assign.AId
+                                                    join assignCat in db.AssignmentCategories on assign.AcId equals assignCat.AcId
+                                                    select assignCat).ToList();
+            uint totalGradeWeight = 0;
+            double percentGrade = 0;
+            foreach(AssignmentCategories ac in getAllAssignCat)
+            {
+                totalGradeWeight += ac.GradeWeight;
+                uint submissionScore = 0;
+                uint totalPoints = 0;
+                var query = (from assign in db.Assignments
+                            join submission in db.Submission on assign.AId equals submission.AId
+                            where assign.AcId == ac.AcId &&
+                            submission.UId == uID
+                            select submission).ToList();
+                foreach(Submission s in query)
+                {
+                    submissionScore += s.Score;
+                }
+                var anotherQuery = (from assign in db.Assignments
+                                    where assign.AcId == ac.AcId 
+                                    select assign).ToList();
+                foreach(Assignments a in anotherQuery)
+                {
+                    totalPoints += a.Points;
+                }
+                percentGrade += (submissionScore / totalPoints)*ac.GradeWeight;
+            }
+            return percentGrade * (100/totalGradeWeight);
+        }
 
 
     /*******End code to modify********/
