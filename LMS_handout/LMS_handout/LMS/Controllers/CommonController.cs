@@ -146,22 +146,25 @@ namespace LMS.Controllers
     public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
     {
             //Listing is SubjectAbbreviation
-            var query = from classes in db.Classes
-                        join course in db.Courses on classes.CId equals course.CId
-                        join departments in db.Departments on course.Listing equals departments.SubA
-                        join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
-                        join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
-                        where departments.SubA == subject &&
-                        course.Number == num &&
-                        classes.Semester.Contains(season+year) &&
-                        assignmentCategories.Name == category &&
-                        assignment.Name ==asgname
-                        select new
-                        {
-                            assignment.Contents
-                        };
+            var query = (from classes in db.Classes
+                         join course in db.Courses on classes.CId equals course.CId
+                         join departments in db.Departments on course.Listing equals departments.SubA
+                         join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
+                         join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
+                         where departments.SubA == subject &&
+                         course.Number == num &&
+                         classes.Semester.Contains(season + year) &&
+                         assignmentCategories.Name == category &&
+                         assignment.Name == asgname
+                         select new
+                         {
+                             assignment.Contents
+                         }
 
-            return Content(query.ToString());
+            ).ToArray();
+
+            //TODO: Fix this
+            return Content(query[0].ToString());
     }
 
 
