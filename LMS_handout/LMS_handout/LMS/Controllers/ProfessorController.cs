@@ -148,7 +148,8 @@ namespace LMS.Controllers
             //Listing is Subject Abbreviation
             //I understand what is the problem but I have no idea how to fix it
             //The problem is that both queries are counting everything in the submission table, how do we seperate and find the exact table?
-            if (category!=null)
+            
+            if (category != null)
             {
                 var query = from courses in db.Courses
                             join classes in db.Classes on courses.CId equals classes.CId
@@ -157,53 +158,36 @@ namespace LMS.Controllers
                             where courses.Listing == subject &&
                             courses.Number == num &&
                             classes.Semester.Equals(season + year) &&
-                            assignmentCat.Name.Equals(category) &&
-                            assignment.AcId == assignmentCat.AcId
+                            assignmentCat.Name.Equals(category)
+
                             select new
                             {
                                 aname = assignment.Name,
                                 cname = assignmentCat.Name,
                                 due = assignment.Due,
-                                submissions = (from submit in db.Submission
-                                              join assignment in db.Assignments on submit.AId equals assignment.AId
-                                              join assignmentCat in db.AssignmentCategories on assignment.AcId equals assignmentCat.AcId
-                                              join classes in db.Classes on assignmentCat.ClassId equals classes.ClassId
-                                              join courses in db.Courses on classes.CId equals courses.CId
-                                              where courses.Listing == subject &&
-                                              courses.Number == num &&
-                                              classes.Semester.Equals(season + year) &&
-                                              assignmentCat.Name.Equals(category) &&
-                                              assignment.AcId == assignmentCat.AcId
-                                               select submit).Count()
+                                submissions = (from i in assignment.Submission select i).Count()
                             };
-                
-                //seperate the submissions
                 return Json(query.ToArray());
             }
-            var anotherQuery = from courses in db.Courses
-                        join classes in db.Classes on courses.CId equals classes.CId
-                        join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
-                        join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
-                        where courses.Listing == subject &&
-                        courses.Number == num &&
-                        classes.Semester.Equals(season + year) &&
-                        assignment.AcId == assignmentCat.AcId
-                               select new
-                               {
-                                   aname = assignment.Name,
-                                   cname = assignmentCat.Name,
-                                   due = assignment.Due,
-                                   submissions = (from submit in db.Submission
-                                                  join assignment in db.Assignments on submit.AId equals assignment.AId
-                                                  join assignmentCat in db.AssignmentCategories on assignment.AcId equals assignmentCat.AcId
-                                                  join classes in db.Classes on assignmentCat.ClassId equals classes.ClassId
-                                                  join courses in db.Courses on classes.CId equals courses.CId
-                                                  where courses.Listing == subject &&
-                                                  courses.Number == num &&
-                                                  classes.Semester.Equals(season + year) 
-                                                  select submit).Count()
-                               };
-            return Json(anotherQuery.ToArray());
+            else
+            {
+                var query = from courses in db.Courses
+                            join classes in db.Classes on courses.CId equals classes.CId
+                            join assignmentCat in db.AssignmentCategories on classes.ClassId equals assignmentCat.ClassId
+                            join assignment in db.Assignments on assignmentCat.AcId equals assignment.AcId
+                            where courses.Listing == subject &&
+                            courses.Number == num &&
+                            classes.Semester.Equals(season + year)
+
+                            select new
+                            {
+                                aname = assignment.Name,
+                                cname = assignmentCat.Name,
+                                due = assignment.Due,
+                                submissions = (from i in assignment.Submission select i).Count()
+                            };
+                return Json(query.ToArray());
+            }
         }
 
 

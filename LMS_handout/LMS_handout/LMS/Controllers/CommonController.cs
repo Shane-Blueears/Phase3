@@ -161,10 +161,10 @@ namespace LMS.Controllers
                              assignment.Contents
                          }
 
-            ).ToArray();
+            );
 
             //TODO: Fix this
-            return Content(query[0].ToString());
+            return Content(query.FirstOrDefault().Contents);
     }
 
 
@@ -185,27 +185,28 @@ namespace LMS.Controllers
     public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
     {
             //Listing is SubjectAbbreviation
-            var query = from classes in db.Classes
-                        join course in db.Courses on classes.CId equals course.CId
-                        join departments in db.Departments on course.Listing equals departments.SubA
-                        join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
-                        join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
-                        join submission in db.Submission on assignment.AId equals submission.AId
-                        where departments.SubA == subject &&
-                        course.Number == num &&
-                        classes.Semester.Contains(season + year) &&
-                        assignmentCategories.Name == category &&
-                        assignment.Name == asgname &&
-                        submission.UId == "u"+uid
-                        select new
-                        {
-                            submission.Contents
-                        };
-            if(query.ToString().Length ==0)
+            var query = (from classes in db.Classes
+                         join course in db.Courses on classes.CId equals course.CId
+                         join departments in db.Departments on course.Listing equals departments.SubA
+                         join assignmentCategories in db.AssignmentCategories on classes.ClassId equals assignmentCategories.ClassId
+                         join assignment in db.Assignments on assignmentCategories.AcId equals assignment.AcId
+                         join submission in db.Submission on assignment.AId equals submission.AId
+                         where departments.SubA == subject &&
+                         course.Number == num &&
+                         classes.Semester.Contains(season + year) &&
+                         assignmentCategories.Name == category &&
+                         assignment.Name == asgname &&
+                         submission.UId == "u" + uid
+                         select new
+                         {
+                             submission.Contents
+                         }
+            );
+            if(query.ToString().Length == 0)
             {
                 return Content("");
             }
-            return Content(query.ToString());
+            return Content(query.FirstOrDefault().Contents);
         }
 
 
