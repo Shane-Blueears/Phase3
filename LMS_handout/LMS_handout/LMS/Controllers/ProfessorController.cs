@@ -146,6 +146,8 @@ namespace LMS.Controllers
     public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
     {
             //Listing is Subject Abbreviation
+            //I understand what is the problem but I have no idea how to fix it
+            //The problem is that both queries are counting everything in the submission table, how do we seperate and find the exact table?
             if (category!=null)
             {
                 var query = from courses in db.Courses
@@ -393,7 +395,8 @@ namespace LMS.Controllers
                     {
                         grade.Grade = "E";
                     }
-                    db.SaveChanges();
+
+                    //db.SaveChanges();
                     return Json(new { success = true });
                 }
             }
