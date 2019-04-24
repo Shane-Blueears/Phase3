@@ -164,7 +164,7 @@ namespace LMS.Controllers
             );
 
             //TODO: Fix this
-            return Content(query.FirstOrDefault().Contents);
+            return Content(query.FirstOrDefault() == null ? "" : query.FirstOrDefault().Contents);
     }
 
 
@@ -202,11 +202,8 @@ namespace LMS.Controllers
                              Contents = submission.Contents
                          }
             );
-            if(query.ToString().Length == 0)
-            {
-                return Content("");
-            }
-            return Content(query.FirstOrDefault().Contents);
+            
+            return Content(query.FirstOrDefault() == null ? "" : query.FirstOrDefault().Contents);
         }
 
 
