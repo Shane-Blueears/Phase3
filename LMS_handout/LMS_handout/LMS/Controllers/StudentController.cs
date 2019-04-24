@@ -149,20 +149,21 @@ namespace LMS.Controllers
         {
             string semester = season + year;
             uid = "u" + uid;
-            var assignQuery = (from students in db.Students
-                               join enrolled in db.Enrolled on students.UId equals enrolled.UId
+            var assignQuery = (from 
+                               enrolled in db.Enrolled 
                                join classes in db.Classes on enrolled.ClassId equals classes.ClassId
                                join courses in db.Courses on classes.CId equals courses.CId
                                join assignCats in db.AssignmentCategories on classes.ClassId equals assignCats.ClassId
                                join assignments in db.Assignments on assignCats.AcId equals assignments.AcId
                                where subject == courses.Listing && num == courses.Number && semester == classes.Semester
-                               && category == assignCats.Name && asgname == assignments.Name && uid == students.UId
+                               && category == assignCats.Name && asgname == assignments.Name && uid == enrolled.UId
                                select new
                                {
                                    AId = assignments.AId,
                                    AcId = assignments.AcId,
                                    Name = assignments.Name,
                                    Content = assignments.Contents,
+                                   classID = classes.ClassId
                                }
                 );
 
@@ -170,6 +171,7 @@ namespace LMS.Controllers
                 return Json(new { success = false });
 
             var subCountQuery = (from submission in db.Submission
+                                 where submission.UId == uid 
                                  orderby submission.SId
                                  select new { submission.SId }
                                  );
