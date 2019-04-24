@@ -149,45 +149,36 @@ namespace LMS.Controllers
         {
             string semester = season + year;
             uid = "u" + uid;
-            var assignQuery = (from 
-                               enrolled in db.Enrolled 
-                               join classes in db.Classes on enrolled.ClassId equals classes.ClassId
-                               join courses in db.Courses on classes.CId equals courses.CId
-                               join assignCats in db.AssignmentCategories on classes.ClassId equals assignCats.ClassId
-                               join assignments in db.Assignments on assignCats.AcId equals assignments.AcId
-                               where subject == courses.Listing && num == courses.Number && semester == classes.Semester
-                               && category == assignCats.Name && asgname == assignments.Name && uid == enrolled.UId
-                               select new
-                               {
-                                   AId = assignments.AId,
-                                   AcId = assignments.AcId,
-                                   Name = assignments.Name,
-                                   Content = assignments.Contents,
-                                   classID = classes.ClassId
-                               }
+            var assignQuery =
+                               (from enrolled in db.Enrolled
+                                join classes in db.Classes on enrolled.ClassId equals classes.ClassId
+                                join courses in db.Courses on classes.CId equals courses.CId
+                                join assignCats in db.AssignmentCategories on classes.ClassId equals assignCats.ClassId
+                                join assignments in db.Assignments on assignCats.AcId equals assignments.AcId
+                                where subject == courses.Listing && num == courses.Number && semester == classes.Semester
+                                && category == assignCats.Name && asgname == assignments.Name && uid == enrolled.UId
+                                select new
+                                {
+                                    AId = assignments.AId,
+                                    AcId = assignments.AcId,
+                                    Name = assignments.Name,
+                                    Content = assignments.Contents,
+                                }
                 );
 
             if (assignQuery.Count() == 0)
                 return Json(new { success = false });
 
-            var subCountQuery = (from submission in db.Submission
-                                 where submission.UId == uid 
-                                 orderby submission.SId
-                                 select new { submission.SId }
+            var subQuery = (from submission in db.Submission
+                                 where submission.UId == uid && assignQuery.FirstOrDefault().AId == submission.AId
+                                 select submission
                                  );
 
-            var subQuery = (from submission in db.Submission
-                            where submission.UId == uid
-                            select new
-                            {
-                                Contents = submission.Contents
-                            }).ToList();
-
-            if (subQuery.Count == 0)
+            if (subQuery.FirstOrDefault() == null)
             {
                 Submission newSubmission = new Submission
                 {
-                   //SId = subCountQuery.First().SId + 1,
+                    //SId = subCountQuery.First().SId + 1,
                     AId = assignQuery.First().AId,
                     UId = uid,
                     Contents = contents,
@@ -200,9 +191,7 @@ namespace LMS.Controllers
             }
             else
             {
-                Submission prev = (from submission in db.Submission
-                                   where submission.UId == uid
-                                   select submission).First();
+                Submission prev = subQuery.FirstOrDefault();
                 prev.Contents = contents;
                 db.SaveChanges();
                 return Json(new { success = true });
