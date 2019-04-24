@@ -158,7 +158,7 @@ namespace LMS.Controllers
                          assignment.Name == asgname
                          select new
                          {
-                             assignment.Contents
+                             Contents = assignment.Contents
                          }
 
             );
@@ -199,7 +199,7 @@ namespace LMS.Controllers
                          submission.UId == "u" + uid
                          select new
                          {
-                             submission.Contents
+                             Contents = submission.Contents
                          }
             );
             if(query.ToString().Length == 0)
