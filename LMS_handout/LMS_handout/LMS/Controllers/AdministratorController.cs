@@ -154,7 +154,8 @@ namespace LMS.Controllers
     {
             bool locAvailable = false;
             var locQuery = (from loc in db.Classes
-                            where loc.Loc == location
+                            where loc.Loc == location &&
+                            loc.Semester.Equals(season+year)
                             select loc);
             //TODO: check if this works
             if (locQuery.Count() != 0)
@@ -185,13 +186,13 @@ namespace LMS.Controllers
 
             if (locAvailable && !hasExisted)
             {
-                var query = (from classes in db.Classes
-                             join courses in db.Courses on classes.CId equals courses.CId
-                             orderby classes.ClassId
+
+                var query = (from courses in db.Courses
+                             where courses.Listing == subject &&
+                             courses.Number ==number
                              select new
                              {
-                                 classes.CId,
-                                 classes.ClassId
+                                 courses.CId
                              }
                              );
                 Classes newClass = new Classes
@@ -205,7 +206,7 @@ namespace LMS.Controllers
                     ETime = end
                 };
                 db.Classes.Add(newClass);
-                db.SaveChanges();
+              db.SaveChanges();
                 return Json(new { success = true });
 
             }

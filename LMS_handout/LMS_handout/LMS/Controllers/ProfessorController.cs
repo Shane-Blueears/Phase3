@@ -497,8 +497,8 @@ namespace LMS.Controllers
             foreach(AssignmentCategories ac in getAllAssignCat)
             {
                 totalGradeWeight += ac.GradeWeight;
-                uint submissionScore = 0;
-                uint totalPoints = 0;
+                double submissionScore = 0;
+                double totalPoints = 0;
                 var query = (from assign in db.Assignments
                             join submission in db.Submission on assign.AId equals submission.AId
                             where assign.AcId == ac.AcId &&
@@ -519,7 +519,7 @@ namespace LMS.Controllers
                 {
                     totalPoints = 1;
                 }
-                percentGrade += (submissionScore / totalPoints)*ac.GradeWeight;
+                percentGrade += (submissionScore / totalPoints) * ac.GradeWeight;
             }
             double totalPercent = percentGrade * (100 / totalGradeWeight);
             if (totalPercent >= 93)
