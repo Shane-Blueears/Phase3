@@ -498,7 +498,7 @@ namespace LMS.Controllers
             {
                 totalGradeWeight += ac.GradeWeight;
                 uint submissionScore = 0;
-                uint totalPoints = 1;
+                uint totalPoints = 0;
                 var query = (from assign in db.Assignments
                             join submission in db.Submission on assign.AId equals submission.AId
                             where assign.AcId == ac.AcId &&
@@ -514,6 +514,10 @@ namespace LMS.Controllers
                 foreach(Assignments a in anotherQuery)
                 {
                     totalPoints += a.Points;
+                }
+                if (totalPoints == 0)
+                {
+                    totalPoints = 1;
                 }
                 percentGrade += (submissionScore / totalPoints)*ac.GradeWeight;
             }
